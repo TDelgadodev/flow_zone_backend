@@ -1,8 +1,9 @@
-import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } from 'typeorm';
+import { Workspace } from 'src/workspace/entities/workspace.entity';
+import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity()
 export class Project {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ length: 255 })
@@ -19,6 +20,9 @@ export class Project {
 
   @Column({ type: 'date', nullable: true })
   endDate?: Date;
+
+  @ManyToOne(() => Workspace, (workspace) => workspace.projects)
+  workspace: Workspace;
 
   @CreateDateColumn()
   createdAt: Date;

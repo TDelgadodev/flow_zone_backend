@@ -1,14 +1,18 @@
+import { Project } from 'src/project/entities/project.entity';
+import { User } from 'src/user/entities/user.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
-  PrimaryColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity()
 export class Workspace {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
@@ -21,7 +25,16 @@ export class Workspace {
   password?: string;
 
   @Column('json', { nullable: true })
-  tools?: any;
+  tools?: Record<string, any>; 
+
+  @Column({ default: true })
+  isDefault: boolean;
+
+  @ManyToOne(() => User, (user) => user.workspaces, { onDelete: 'CASCADE' })
+  user: User;
+
+  @OneToMany(() => Project, (project) => project.workspace, { cascade: true })
+  projects: Project[];
 
   @CreateDateColumn()
   createdAt: Date;
