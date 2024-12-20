@@ -5,23 +5,27 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { UserRole } from 'src/permissions/enums/role.enum';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly authService: AuthService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const { email, password, fullName, role } = createUserDto;
 
-    const userRole = Object.values(UserRole).includes(role) ? role : UserRole.USER;
+    const userRole = Object.values(UserRole).includes(role)
+      ? role
+      : UserRole.USER;
     const hashedPassword = await this.authService.hashPassword(password);
 
     const newUser = this.userRepository.create({
       email,
-      password: hashedPassword, 
+      password: hashedPassword,
       fullName,
       role: userRole,
     });
@@ -41,10 +45,15 @@ export class UserService {
       relations: ['workspaces'],
     });
   }
-
+  async findByEmail(email: string): Promise<User | undefined> {
+    return this.userRepository.findOne({
+      where: { email },
+      relations: ['workspaces'],
+    });
+  }
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     await this.userRepository.update(id, updateUserDto);
-    return this.findOne(id)
+    return this.findOne(id);
   }
 
   async remove(id: string): Promise<void> {

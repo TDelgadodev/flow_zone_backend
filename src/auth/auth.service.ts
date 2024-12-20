@@ -1,26 +1,61 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { UserRole } from 'src/permissions/enums/role.enum';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class AuthService {
-  create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
+  constructor(
+    private userService: UserService,
+    private jwtService: JwtService,
+  ) {}
+  async hashPassword(password: string): Promise<string> {
+    const salt = await bcrypt.genSalt();
+    return bcrypt.hash(password, salt);
   }
 
-  findAll() {
-    return `This action returns all auth`;
+  async comparePasswords(
+    plainTextPassword: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
+    return bcrypt.compare(plainTextPassword, hashedPassword);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
+  async validateUser(email: string, pass: string): Promise<any> {
+    const user = await this.userService.findByEmail(email);
+    if (user && (await this.comparePasswords(pass, user.password))) {
+      const { password, ...result } = user;
+      return result;
+    }
+    return null;
   }
-
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
+  async login(email: string, password: string) {
+    const user = await this.validateUser(email, password);
+    if (!user) {
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+    const payload = {
+      email: user.email,
+      sub: user.id,
+      role: user.role,
+    };
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+      },
+    };
   }
-
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+  async register(email: string, password: string, fullName: string) {
+    const hashedPassword = await this.hashPassword(password);
+    return this.userService.create({
+      email,
+      password: hashedPassword,
+      fullName,
+      role: UserRole.GUEST,
+    });
   }
 }
