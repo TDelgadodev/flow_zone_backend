@@ -1,3 +1,4 @@
+import { UserRole } from 'src/permissions/enums/role.enum';
 import { Workspace } from 'src/workspace/entities/workspace.entity';
 import {
     Column,
@@ -24,6 +25,13 @@ import {
   
     @OneToMany(() => Workspace, (workspace) => workspace.user)
     workspaces: Workspace[];
+
+    @Column({
+      type: 'enum',
+      enum: UserRole,
+      default: UserRole.GUEST, 
+    })
+    role: UserRole;
   
     @CreateDateColumn()
     createdAt: Date;
